@@ -3,7 +3,7 @@ import axios from "axios";
 const TOKEN_KEY = "jwtToken";
 
 const api = axios.create({
-   baseURL: 'http://localhost:8443/api',
+   baseURL: 'https://daily-diary-app-secure.onrender.com/api',
 });
 
 // Helper so logout / expiry handling has a single source of truth.
