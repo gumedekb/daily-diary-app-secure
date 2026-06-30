@@ -33,7 +33,6 @@ build/
 .vscode/
 
 ### Sensitive info ###
-src/main/resources/application.properties
 src/main/resources/*.p12
 logs/
 *.log
