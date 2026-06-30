@@ -3,6 +3,8 @@ package com.diary.io.user;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -26,6 +28,9 @@ public class User {
 	@Column(nullable = false, unique = true, length = 100)
 	private String email;
 	
+	// WRITE_ONLY: the BCrypt hash can be deserialized from input but is never
+	// included in any JSON response, preventing password-hash leakage.
+	@JsonProperty(access = Access.WRITE_ONLY)
 	@Column(name = "password", nullable = false)
 	private String password;
 	

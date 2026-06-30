@@ -26,7 +26,11 @@ export default function Signup() {
       setSuccess("Account created successfully!");
       setTimeout(() => navigate("/auth/login"), 1500); // redirect to login
     } catch (err) {
-      setError(err.response?.data?.message || "Signup failed");
+      // Backend may return a plain string body or a { message } JSON object.
+      const data = err.response?.data;
+      const message =
+        typeof data === "string" ? data : data?.message;
+      setError(message || "Signup failed");
     }
   };
 

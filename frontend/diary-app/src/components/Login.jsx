@@ -19,8 +19,11 @@ const Login = ({ onLogin }) => {
          onLogin(response.data.username);
          navigate("/diary"); // 👈 redirect to diary page
       } catch (err) {
-         console.error(err.response || err);
-         setError('Invalid username or password')
+         // Surface backend messages (e.g. rate-limit lockout). Body may be a
+         // plain string or a { message } object.
+         const data = err.response?.data;
+         const message = typeof data === "string" ? data : data?.message;
+         setError(message || 'Invalid username or password');
       }
    };
 

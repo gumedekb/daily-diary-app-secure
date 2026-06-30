@@ -1,12 +1,14 @@
 package com.diary.io.diary;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import com.diary.io.user.User;
 import com.diary.io.user.UserRepository;
 import com.diary.io.dto.CreateDiaryRequest;
+import com.diary.io.exception.ResourceNotFoundException;
+
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class MyDiaryService {
@@ -21,29 +23,22 @@ public class MyDiaryService {
 
     public MyDiary createEntry(CreateDiaryRequest request, String username) {
         User user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         MyDiary diary = new MyDiary();
         diary.setTitle(request.getTitle());
         diary.setContent(request.getContent());
-        diary.setUser(user); 
+        diary.setUser(user);
 
         return diaryRepository.save(diary);
     }
 
-
-
     public List<MyDiary> getAllEntries(Long userId) {
         return diaryRepository.findByUser_Id(userId);
     }
-    
-    public MyDiary updateEntry(Long id, CreateDiaryRequest request, String username) {
-        MyDiary existing = diaryRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Diary not found"));
 
-        if (!existing.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("Unauthorized to update this entry");
-        }
+    public MyDiary updateEntry(Long id, CreateDiaryRequest request, Long userId) {
+        MyDiary existing = getOwnedEntry(id, userId);
 
         existing.setTitle(request.getTitle());
         existing.setContent(request.getContent());
@@ -52,12 +47,28 @@ public class MyDiaryService {
         return diaryRepository.save(existing);
     }
 
-    public Optional<MyDiary> getEntryById(Long id) {
-        return diaryRepository.findById(id);
+    /** Returns an entry only if it belongs to the given user (fixes IDOR on read). */
+    public MyDiary getEntryById(Long id, Long userId) {
+        return getOwnedEntry(id, userId);
     }
 
-    public void deleteEntry(Long id) {
-        diaryRepository.deleteById(id);
+    /** Deletes an entry only if it belongs to the given user (fixes IDOR on delete). */
+    public void deleteEntry(Long id, Long userId) {
+        MyDiary existing = getOwnedEntry(id, userId);
+        diaryRepository.delete(existing);
+    }
+
+    /**
+     * Loads an entry and enforces ownership. Throws 404 if it does not exist and
+     * 403 if it belongs to a different user.
+     */
+    private MyDiary getOwnedEntry(Long id, Long userId) {
+        MyDiary existing = diaryRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Diary entry not found"));
+
+        if (!existing.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You do not own this diary entry");
+        }
+        return existing;
     }
 }
-
